@@ -31,7 +31,7 @@ for i in range(10000):
         alicescore, bobscore = check_list(twolst,alicescore,bobscore)
     if alicescore > bobscore:
         alicewin += 1
-    else:
+    elif bobscore > alicescore:
         bobwin += 1
 
 print(alicewin)
