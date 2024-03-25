@@ -8,9 +8,9 @@ Suppose that we have N cars parked in a line occupying spaces 1 to N... spaces N
 import random
 import matplotlib.pyplot as plt
 import numpy as np
-N = 40
+N = 20
 max_time = 10*N
-no_tests = 100000
+no_tests = 10000
 expected_value = 0
 d = {}
 for i in range(1, max_time+1):
@@ -36,17 +36,18 @@ def simulate(N, max_time, no_tests, expected_value, d):
     for key, val in d.items():
         d[key] = val / no_tests
         expected_value += key * d[key]
+    print(d)
     return (expected_value)
 
-'''
-x = np.array([i for i in range(1,N+1)])
-y = []
-for i in range(1, N+1):
-    y.append(simulate(i, max_time, no_tests, expected_value, d))
-    print(i)
-y = np.array(y)
-'''
+def run_first_N(N, max_time, no_tests, expected_value, d):
+    x = np.array([i for i in range(1,N+1)])
+    y = []
+    for i in range(1, N+1):
+        y.append(simulate(i, max_time, no_tests, expected_value, d))
+        print(i)
+    y = np.array(y)
 
+'''
 x = np.array([i for i in range(1,N+1)])
 y = np.array(
     [
@@ -121,33 +122,4 @@ regression_line_nloglogn = slope_nloglogn * x_nloglogn_transform + intercept_nlo
 plt.plot(x, regression_line_nloglogn, color='green', label='n log log n Regression')
 
 plt.show()
-'''
-01: 2.0001999999999995
-02: 6.668450001999999
-03: 12.073026684500022
-04: 17.81767073026684
-05: 23.775928176707303
-06: 29.830467759281763
-07: 35.98798830467759
-08: 42.200849879883044
-09: 48.455392008498805
-10: 54.79578455392009
-11: 61.13013795784554
-12: 67.48893130137958
-13: 73.92723488931298
-14: 80.39519927234892
-15: 86.7903439519927
-16: 93.26746790343951
-17: 99.77317267467906
-18: 106.23070773172671
-19: 112.78782230707729
-20: 119.2735178782231
-21: 125.73344273517877
-22: 132.29754733442735
-23: 138.85841297547336
-24: 145.46037858412978
-25: 152.0405546037858
-26: 158.60052040554606
-27: 165.2106560052041
-28: 171.7562421065601
 '''
