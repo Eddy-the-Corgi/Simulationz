@@ -1,5 +1,6 @@
 from pythonds.basic import Stack
 from pythonds.trees import BinaryTree
+from pythonds.graphs import PriorityQueue, Graph, Vertex
 import operator
 
 def bubbleSort(lst):
@@ -516,17 +517,322 @@ class AVLTree(BinarySearchTree):
                 node.parent.balanceFactor -= 1
             if node.parent.balanceFactor != 0: # Check for base case 2
                 self.updateBalance(node.parent)
+    
+    def rotateLeft(self, rotRoot):                  # The case of rotateRight is analogous
+        newRoot = rotRoot.rightChild                # Temporary variable to store new root
+        rotRoot.rightChild = newRoot.leftChild      # Child switches parent after rotation
+        if newRoot.leftChild != None:
+            newRoot.leftChild.parent = rotRoot      # Fix pointer of switched child after rotation
+        newRoot.parent = rotRoot.parent             # Ensure consistency in case rotation is not at the root node
+        if rotRoot.isRoot():                        # Case 1: Old root no parents
+            self.root = newRoot
+        else:
+            if rotRoot.isLeftChild():               # Case 2: Old root is left child
+                rotRoot.parent.leftChild = newRoot  # Update pointer
+            else:
+                rotRoot.parent.rightChild = newRoot
+        newRoot.leftChild = rotRoot                 # Update pointers
+        rotRoot.parent = newRoot
+        rotRoot.balanceFactor = rotRoot.balanceFactor + 1 - min(0, newRoot.balanceFactor) # Requires some derivation
+        newRoot.balanceFactor = newRoot.balanceFactor + 1 + max(0, rotRoot.balanceFactor)
+    
+    def rebalance(self, node):
+        if node.balanceFactor < 0:   # Right heavy, need to do left rotation first
+            if node.rightChild.balanceFactor > 0: # Check whether right child is left heavy
+                self.rotateRight(node.rightChild) # Rotate left-heavy right child first
+            self.rotateLeft(node)    # Proceed with left rotation
+        elif node.balanceFactor > 0: # Left heavy, need to do right rotation first
+            if node.leftChild.balanceFactor < 0:  # Proceed analogously
+                self.rotateLeft(node.leftChild)
+            self.rotateRight(node)
 
-'''
-First check is rebalancing is needed. If needed, then performed, and done. Else, continue balancing parents.
-Efficient rebalancing is key to making the AVL perform well.
 
-Perform one or more rotations on the tree
---Diagram of Rotation--
-Left Rotation:
-- Promote right child to the root
-- Move old root to the left child
-- The left child (if any) getting replaced is the right child of the replacement
-Reversed for the Right Rotation.
-Need to ensure BST properties are preserved, and update all parent pointers.
-'''
+class Vertex:           # Dictionary of other connected vertices
+    def __init__(self, key):
+        self.id = key   # Initialise attributes
+        self.connectedTo = {}
+    
+    def addNeighbour(self, nbr, weight = 0):  # Optional weight parameter
+        self.connectedTo[nbr] = weight        # That defaults to 0
+
+    def getConnections(self):   # Accessor
+        return self.connectedTo.keys()
+    
+    def getId(self):
+        return self.id
+    
+    def getWeight(self, nbr):
+        return self.connectedTo[nbr]
+    
+    def __str__(self):  # Allows printing of Vertex class
+        return str(self.id) + ' connectedTo: ' + str([x.id for x in self.connectedTo])
+    
+class Graph:           # Master dictionary of vertices
+    def __init__(self):
+        self.vertList = {}
+        self.numVertices = 0
+
+    def addVertex(self, key):
+        self.numVertices += 1
+        newVertex = Vertex(key)
+        self.vertList[key] = newVertex
+        return newVertex
+    
+    def getVertex(self, n):
+        if n in self.vertList:
+            return self.vertList[n]
+        return None
+    
+    def addEdge(self, f, t, weight = 0):
+        if f not in self.vertList:  # Vertices must exist
+            newVertex = self.addVertex(f)
+        if t not in self.vertList:  # For an edge to be added
+            newVertex = self.addVertex(t)
+        self.vertList[f].addNeighbour(self.vertList[t], weight)
+
+    def getVertices(self):
+        return self.vertList.keys()
+    
+    def __contains__(self, n):  # Allows graph membership testing
+        return n in self.vertList
+
+    def __iter__(self):         # Allows graph iteration
+        return iter(self.vertList.values())
+
+def buildGraph(wordFile):
+    d = {}
+    g = Graph()
+    wfile = open(wordFile,'r') # create buckets of words that differ by one letter
+    for line in wfile:
+        word = line[:-1]
+        for i in range(len(word)):
+            bucket = word[:i] + '_' + word[i+1:]
+            if bucket in d:
+                d[bucket].append(word)
+            else:
+                d[bucket] = [word]
+    # add vertices and edges for words in the same bucket
+    for bucket in d.keys():
+        for word1 in d[bucket]:
+            for word2 in d[bucket]:
+                if word1 != word2:
+                    g.addEdge(word1,word2)
+    return g
+
+def bfs(g, start):
+    start.setDistance(0)                        # Initialise starting vertex
+    start.setPred(None)
+    vertQueue = Queue()
+    vertQueue.enqueue(start)
+    while vertQueue.size() > 0:
+        currentVert = vertQueue.dequeue()
+        for nbr in currentVert.getConnections():
+            if nbr.getColor() == 'white':       # White is undisocvered
+                nbr.setColor('gray')            # Gray is currently being explored
+                nbr.setDistance(currentVert.getDistance() + 1)
+                nbr.setPred(currentVert)
+                vertQueue.enqueue(nbr)
+        currentVert.setColor('black')           # Black is fully explored, no adjacent white vertices
+
+def traverse(y):
+    x = y
+    while x.getPred():
+        print(x.getId())
+        x = x.getPred()
+    print(x.getId())
+
+def knightGraph(bdSize):
+    ktGraph = Graph()
+    for row in range(bdSize):
+        for col in range(bdSize):
+            nodeId = posToNodeId(row,col,bdSize)
+            newPositions = genLegalMoves(row,col,bdSize)
+            for e in newPositions:
+               nid = posToNodeId(e[0],e[1],bdSize)
+               ktGraph.addEdge(nodeId,nid)
+    return ktGraph
+    
+def posToNodeId(row, column, board_size):
+    return (row * board_size) + column # Node ID starts from 0 on the top left,
+                                           # increasing along the row
+        
+def genLegalMoves(x,y,bdSize):
+    newMoves = []
+    moveOffsets = [(-1,-2),(-1,2),(-2,-1),(-2,1),(1,-2),(1,2),(2,-1),(2,1)]
+    for i in moveOffsets:
+        newX = x + i[0]
+        newY = y + i[1]
+        if legalCoord(newX,bdSize) and legalCoord(newY,bdSize):
+            newMoves.append((newX,newY))
+    return newMoves
+    
+def legalCoord(x,bdSize):
+    if x >= 0 and x < bdSize:
+        return True
+    return False
+
+def knightTour(n, path, u, limit): # Parameters are current depth, list of visited vertices, a candidate vertex, and the number of nodes in the path
+    u.setColor('gray')                 # Gray vertices are visited
+    path.append(u)
+    if n < limit:
+        nbrList = list(u.getConnections())
+        i = 0
+        done = False
+        while i < len(nbrList) and not done:
+            if nbrList[i].getColor == 'white': # White vertices are visited
+                done = knightTour(n+1, path, nbrList[i], limit)      # Recursive call
+                i += 1
+        if not done:                               # Prepare to backtrack
+            path.pop()
+            u.setColor('white')
+    else:
+        done = True         # Base case, path with 64 vertices returns a successful tour
+    return done
+
+def orderByAvail(n):
+    resList = []
+    for v in n.getConnections():
+        if v.getColor() == 'white':
+            c = 0
+            for w in v.getConnections():
+                if w.getColor() == 'white':
+                    c += 1
+            resList.append((c,v))
+    resList.sort(key = lambda x: x[0])
+    return [y[1] for y in resList]
+
+
+class DFSGraph(Graph):
+    def __init__(self):
+        super().__init__()
+        self.time = 0
+        self.sccs = []
+            
+    def dfs(self):
+        for aVertex in self:
+            aVertex.setColor('white')
+            aVertex.setPred(-1)          # Vertex has no predecessor
+        for aVertex in self:
+            if aVertex.getColor() == 'white':
+                self.dfsvisit(aVertex)
+                    
+    def dfsvisit(self, startVertex):
+        startVertex.setColor('gray')
+        self.time += 1
+        startVertex.setDiscovery(self.time)
+        for nextVertex in startVertex.getConnections():
+            if nextVertex.getColor() == 'white':
+                nextVertex.setPred(startVertex)
+                self.dfsvisit(nextVertex)
+        startVertex.setColor('black')
+        self.time += 1
+        startVertex.setFinish(self.time)
+    
+    def toposort(self): # New method for DFSGraph class
+        self.dfs()      # Perform DFS to get times
+        sorted_verts = sorted(self, key=lambda vert: vert.getFinish(), reverse = True)
+        return [vert.getName() for vert in sorted_verts]
+
+    def transpose(self): # No built-in transpose method
+        gt = DFSGraph()
+        for vertex in self: # Note that Graph has an adjacency list implementation
+            gt.addVertex(vertex.getName())
+        for vertex in self:
+            for neighbour in vertex.getConnections():
+                gt.addEdge(neighbour.getName(), vertex.getName()) # Reversed edges
+        return gt
+
+    def scc(self): # New method for DFSGraph class
+        self.dfs()
+        gt = self.transpose()
+        self.time = 0 # Reset time before DFS on transpose
+
+        sorted_verts = sorted(self, key=lambda vert: vert.getFinish(), reverse=True)
+
+        for aVertex in gt: # Similar to dfsvisit method
+            aVertex.setColor('white')
+            aVertex.setPred(-1)
+        for aVertex in sorted_verts: # Now in reverse order
+            if aVertex.getColor() == 'white':
+                component = [] # Storing each SCC
+                self.sccdfsvisit(gt, aVertex, component)
+                self.sccs.append(component) # Add a sccs attribute to DFSGraph before this
+            
+        return self.sccs
+    
+    def sccdfsvisit(self, gt, startVertex, component): # SCC variant of dfsvisit
+        startVertex.setColor('gray')
+        self.time += 1
+        startVertex.setDiscovery(self.time)
+        component.append(startVertex.getName()) # Add to current SCC
+        for nextVertex in startVertex.getConnections(): # Uses gt as intended
+            if nextVertex.getColor() == 'white':
+                nextVertex.setPred(startVertex)
+                self.sccdfsvisit(gt, nextVertex, component)
+        startVertex.setColor('black')
+        self.time += 1
+        startVertex.setFinish(self.time)
+
+def dijkstra(aGraph,start):
+    pq = PriorityQueue()
+    start.setDistance(0)
+    pq.buildHeap([(v.getDistance(),v) for v in aGraph])
+    while not pq.isEmpty():
+        currentVert = pq.delMin()
+        for nextVert in currentVert.getConnections():
+            newDist = currentVert.getDistance() + currentVert.getWeight(nextVert)
+            if newDist < nextVert.getDistance():
+                nextVert.setDistance( newDist )
+                nextVert.setPred(currentVert)
+                pq.decreaseKey(nextVert,newDist)
+
+def prim(G,start):
+    pq = PriorityQueue()
+    for v in G:
+        v.setDistance(sys.maxsize)
+        v.setPred(None)
+    start.setDistance(0)
+    pq.buildHeap([(v.getDistance(),v) for v in G])
+    while not pq.isEmpty():
+        currentVert = pq.delMin()
+        for nextVert in currentVert.getConnections():
+          newCost = currentVert.getWeight(nextVert)
+          if nextVert in pq and newCost<nextVert.getDistance():
+              nextVert.setPred(currentVert)
+              nextVert.setDistance(newCost)
+              pq.decreaseKey(nextVert,newCost)
+
+
+class UnionFind:
+    def __init__(self, size):
+        self.parent = list(range(size))  # Each element is its own parent initially
+        self.rank = [0] * size  # Rank is initially 0 for all elements
+
+    def find(self, x):
+        if self.parent[x] != x:
+            self.parent[x] = self.find(self.parent[x])  # Path compression
+        return self.parent[x]
+
+    def union(self, x, y):
+        rootX = self.find(x)
+        rootY = self.find(y)
+        if rootX != rootY:  # Only merge if they are in different sets
+            if self.rank[rootX] > self.rank[rootY]:
+                self.parent[rootY] = rootX
+            elif self.rank[rootX] < self.rank[rootY]:
+                self.parent[rootX] = rootY
+            else:
+                self.parent[rootY] = rootX
+                self.rank[rootX] += 1
+
+def kruskal(num_vertices, edges):
+    edges.sort(key=lambda x: x[2])   # Sort edges by weight
+    uf = UnionFind(num_vertices)
+    mst = []
+    total_cost = 0
+    for u, v, weight in edges:
+        if uf.find(u) != uf.find(v): # No cycle
+            uf.union(u, v)
+            mst.append((u, v, weight))
+            total_cost += weight
+    return mst, total_cost

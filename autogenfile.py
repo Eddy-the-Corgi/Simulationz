@@ -14,7 +14,7 @@ from autogen import register_function
 martin = ConversableAgent(
     "martin",
     system_message = """You are Martin, a Mathematics undergraduate student.
-You are reserved and tend to output a short string of no more than 20 words.""", # Branding/Identity
+                        You are reserved and tend to output a short string of no more than 20 words.""", # Branding/Identity
     llm_config = {"config_list": [{
         "model": "gpt-4", 
         "temperature": 0.3, 
@@ -25,15 +25,15 @@ You are reserved and tend to output a short string of no more than 20 words.""",
     code_execution_config = False,                             # Turn off code execution, by default it is off.
     function_map = None,                                       # No registered functions, by default it is None.
     human_input_mode = "NEVER",                                # Never ask for human input.
-    #max_consecutive_auto_reply = 1,                            # Limit the number of consecutive auto-replies.
-    #is_termination_msg = lambda msg: "life" in msg["content"].lower(),
+    max_consecutive_auto_reply = 1,                            # Limit the number of consecutive auto-replies.
+    is_termination_msg = lambda msg: "life" in msg["content"].lower(),
 )
 
 corgi = ConversableAgent(
     "corgi",
     system_message = """You are Martin's pet dog.
-You are very energetic and tend to output long strings of 
-more than 50 words.""",
+                        You are very energetic and tend to output long strings of 
+                        more than 50 words.""",
     llm_config = {"config_list": [{
         "model": "gpt-4",
         "temperature": 0.95,
@@ -166,7 +166,7 @@ always_marc2 = ConversableAgent(
 #marc2reply = always_marc2.generate_reply(messages = [{"content": "Please guide me on how I can better use AI for intelligence-driven influence.", "role": "user"}])
 #print(marc2reply)
 
-          #TERMINATE: Please give feedback to the sender. 
+          #TERMINATE: Please give feedback to the sender.
           #Press enter or type 'exit' to stop the conversation: do not mention the phrase AI
           #{'role': 'user', 'content': 'do not mention the phrase AI'}
 
@@ -320,13 +320,13 @@ teacher_agent = ConversableAgent(
     },
 )
 
-chat_result = student_agent.initiate_chat(
-    teacher_agent,
-    message = "What is triangle inequality?",
-    summary_method = "reflection_with_llm",       # Summarize the takeaway from the conversation. Do not add any introductory phrases.
-    #summary_prompt = "Summarise the takeaway from the conversation in a playful and energetic manner. Sound like a child. Do not add any introductory phrases.",
-    max_turns = 2,
-)
+#chat_result = student_agent.initiate_chat(
+#    teacher_agent,
+#    message = "What is triangle inequality?",
+#    summary_method = "reflection_with_llm",       # Summarize the takeaway from the conversation. Do not add any introductory phrases.
+#    #summary_prompt = "Summarise the takeaway from the conversation in a playful and energetic manner. Sound like a child. Do not add any introductory phrases.",
+#    max_turns = 2,
+#)
 
 #too_good_chat_result = too_good_student_agent.initiate_chat(
 #    teacher_agent,
@@ -335,4 +335,82 @@ chat_result = student_agent.initiate_chat(
 #    max_turns=2,
 #)
 
-print(chat_result.summary)
+#print(chat_result.summary)
+
+          # Sequential Chats
+          # Carryover mechanism summarises all conversations
+
+# The Number Agent always returns the same numbers.
+number_agent = ConversableAgent(
+    name="Number_Agent",
+    system_message="You return me the numbers I give you, one number each line.",
+    llm_config={"config_list": [{"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]}]},
+    human_input_mode="NEVER",
+)
+
+# The Adder Agent adds 1 to each number it receives.
+adder_agent = ConversableAgent(
+    name="Adder_Agent",
+    system_message="You add 1 to each number I give you and return me the new numbers, one number each line.",
+    llm_config={"config_list": [{"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]}]},
+    human_input_mode="NEVER",
+)
+
+# The Multiplier Agent multiplies each number it receives by 2.
+multiplier_agent = ConversableAgent(
+    name="Multiplier_Agent",
+    system_message="You multiply each number I give you by 2 and return me the new numbers, one number each line.",
+    llm_config={"config_list": [{"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]}]},
+    human_input_mode="NEVER",
+)
+
+# The Subtracter Agent subtracts 1 from each number it receives.
+subtracter_agent = ConversableAgent(
+    name="Subtracter_Agent",
+    system_message="You subtract 1 from each number I give you and return me the new numbers, one number each line.",
+    llm_config={"config_list": [{"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]}]},
+    human_input_mode="NEVER",
+)
+
+# The Divider Agent divides each number it receives by 2.
+divider_agent = ConversableAgent(
+    name="Divider_Agent",
+    system_message="You divide each number I give you by 2 and return me the new numbers, one number each line.",
+    llm_config={"config_list": [{"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]}]},
+    human_input_mode="NEVER",
+)
+
+# Start a sequence of two-agent chats.
+# Each element in the list is a dictionary that specifies the arguments
+# for the initiate_chat method.
+
+"""
+chat_results = number_agent.initiate_chats(
+    [
+        {
+            "recipient": adder_agent,
+            "message": "14",
+            "max_turns": 2,
+            "summary_method": "last_msg",
+        },
+        {
+            "recipient": multiplier_agent,
+            "message": "These are my numbers",
+            "max_turns": 2,
+            "summary_method": "last_msg",
+        },
+        {
+            "recipient": subtracter_agent,
+            "message": "These are my numbers",
+            "max_turns": 2,
+            "summary_method": "last_msg",
+        },
+        {
+            "recipient": divider_agent,
+            "message": "These are my numbers",
+            "max_turns": 2,
+            "summary_method": "last_msg",
+        },
+    ]
+)
+"""

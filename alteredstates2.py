@@ -79,6 +79,7 @@ board8 = [
   #arlansas, florila, ilainois, iona, ilaho, georgil, teras, utoh,
   #caine, alasca, oregin, pennsylcania, coloraho, lirginia
   #oklahoma?, newyork? -- PA, 20S
+  # I FORGOT LOAISIANA LMAO
 
 board81 = [
 ['s','f','n','i','g'],
